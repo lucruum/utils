@@ -1,0 +1,72 @@
+#!/usr/bin/bash
+
+git_--() {
+    /usr/bin/git "$@"
+}
+
+git_br() {
+    git branch "$@"
+}
+
+git_co() {
+    git checkout "$@"
+}
+
+git_cane() {
+    git commit -a --amend --no-edit
+}
+
+git_ci() {
+    git commit "$@"
+}
+
+git_wip() {
+    git commit -am "[WIP]"
+}
+
+git_delta() {
+    git diff "$@" | delta -s
+}
+
+git_drop() {
+    local commit=$1
+
+    rebase "drop" $commit
+}
+
+git_edit() {
+    local commit=$1
+
+    rebase "edit" $commit
+}
+
+git_reword() {
+    local commit=$1
+
+    rebase "reword" $commit
+}
+
+rebase() {
+    local command=$1
+    local commit=${2:-HEAD}
+
+    git -c sequence.editor='sed -i "1 s/pick/'$command'/"' rebase -i $commit~1
+}
+
+git_tip() {
+    git show "$@" | delta -s
+}
+
+git_st() {
+    git status "$@"
+}
+
+git() {
+    if declare -F git_$1 > /dev/null; then
+        git_"$@"
+    else
+        git -- "$@"
+    fi
+}
+
+git "$@"
