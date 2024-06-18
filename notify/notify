@@ -1,0 +1,33 @@
+#!/usr/bin/python3
+
+import argparse
+import asyncio
+import os
+import pathlib
+import signal
+
+
+async def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("file", nargs="+")
+    parser.add_argument("exec")
+    args = parser.parse_args()
+
+    while True:
+        task = asyncio.create_task(asyncio.create_subprocess_shell(args.exec))
+
+        mtimes = [pathlib.Path(it).stat().st_mtime for it in args.file]
+        while [pathlib.Path(it).stat().st_mtime for it in args.file] == mtimes:
+            await asyncio.sleep(0.5)
+
+        try:
+            parent = task.result().pid
+            child = int(open(f"/proc/{parent}/task/{parent}/children").read())
+            os.kill(child, signal.SIGTERM)
+            os.kill(parent, signal.SIGTERM)
+        except FileNotFoundError:
+            # Процесс уже завершился
+            pass
+
+
+asyncio.run(main())
